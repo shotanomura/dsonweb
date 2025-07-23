@@ -1,0 +1,194 @@
+/* ヘッダーのメインスタイル */
+.app-header {
+  background-color: #ffffff;
+  border-bottom: 2px solid #e9ecef;
+  padding: 12px 40px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* ヘッダーメイン部分 */
+.header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.header-left h1 {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+/* ヘッダータブ */
+.header-tabs {
+  display: flex;
+  gap: 0;
+  align-items: center;
+}
+
+.tab-button {
+  padding: 8px 20px;
+  border: none;
+  background-color: transparent;
+  color: #6c757d;
+  cursor: pointer;
+  border-radius: 0;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  border-bottom: 3px solid transparent;
+  position: relative;
+}
+
+.tab-button:hover {
+  background-color: #f8f9fa;
+  color: #495057;
+}
+
+.tab-button.active {
+  color: #007bff;
+  background-color: #ffffff;
+  border-bottom-color: #007bff;
+}
+
+.tab-button.active::before {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #007bff;
+  border-radius: 1px 1px 0 0;
+}
+
+/* 右側のファイルセクション */
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.file-section {
+  display: flex;
+  align-items: center;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filename-text {
+  color: #495057;
+  font-size: 0.85rem;
+  font-weight: 500;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-change-button {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: #6c757d;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-weight: 500;
+  font-size: 0.75rem;
+  border: none;
+}
+
+.file-change-button:hover {
+  background-color: #495057;
+}
+
+.file-uploader-label {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-weight: 500;
+  font-size: 0.9rem;
+  border: none;
+}
+
+.file-uploader-label:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+/* ファイルinputを非表示 */
+input[type="file"] {
+  display: none;
+}
+
+/* エラーセクション */
+.error-section {
+  margin-top: 10px;
+}
+
+.error {
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 8px;
+  border-radius: 4px;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 1024px) {
+  .header-main {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+  
+  .header-left {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+  
+  .header-tabs {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 10px 20px;
+  }
+  
+  .header-left h1 {
+    font-size: 1.4rem;
+  }
+  
+  .tab-button {
+    padding: 6px 15px;
+    font-size: 0.8rem;
+  }
+  
+  .filename-text {
+    font-size: 0.8rem;
+    max-width: 150px;
+  }
+}
