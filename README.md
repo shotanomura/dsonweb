@@ -5,8 +5,25 @@
 ## 📁 プロジェクト構造
 
 ```
-dsowa/
-├── frontend/          # React + Vite フロントエンド
+dsow## 🚀 デプロイメント
+プロジェクトルートで開発することを推奨します。`.vscode/settings.json`で各ディレクトリ用の設定が自動適用されます。
+
+## 🚀 デプロイメント# Netlify
+フロントエンドは自動的にNetlifyにデプロイされます。
+
+**設定**:
+- Base directory: `frontend`
+- Build command: `npm ci && npm run build`
+- Publish directory: `dist`
+
+### バックエンド
+バックエンドは別途、以下のプラットフォームでデプロイ可能：
+- Railway
+- Render
+- Heroku
+- DigitalOcean App Platform
+
+## 📝 ライセンス        # React + Vite フロントエンド
 │   ├── src/          # Reactコンポーネント
 │   ├── public/       # 静的アセット
 │   ├── package.json  # フロントエンド依存関係
