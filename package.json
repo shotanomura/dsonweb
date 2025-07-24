@@ -1,30 +1,35 @@
 {
-  "name": "dsowa",
+  "name": "dsowa-monorepo",
+  "version": "1.0.0",
+  "description": "Data Science on Web Application - Monorepo",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "chart.js": "^4.5.0",
-    "papaparse": "^5.5.3",
-    "react": "^19.1.0",
-    "react-chartjs-2": "^5.3.0",
-    "react-dom": "^19.1.0"
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && python main.py",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
+    "clean": "rm -rf frontend/node_modules backend/__pycache__ frontend/dist",
+    "lint": "cd frontend && npm run lint",
+    "test": "npm run test:frontend",
+    "test:frontend": "cd frontend && npm run test"
   },
   "devDependencies": {
-    "@eslint/js": "^9.30.1",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
-    "eslint": "^9.30.1",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.3.0",
-    "vite": "^7.0.4"
-  }
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "data-science",
+    "machine-learning",
+    "web-app",
+    "react",
+    "fastapi",
+    "monorepo"
+  ],
+  "author": "nomurashouta",
+  "license": "MIT"
 }
