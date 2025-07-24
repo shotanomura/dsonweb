@@ -1,12 +1,13 @@
 /* ヘッダーのメインスタイル */
 .app-header {
-  background-color: #ffffff;
-  border-bottom: 2px solid #e9ecef;
-  padding: 12px 40px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-primary);
+  padding: 20px 40px;
+  box-shadow: var(--shadow-light);
   position: sticky;
   top: 0;
   z-index: 100;
+  position: relative;
 }
 
 /* ヘッダーメイン部分 */
@@ -22,54 +23,108 @@
   gap: 30px;
 }
 
+/* ロゴとタイトルのコンテナ */
+.logo-title-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.header-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-primary);
+  padding: 8px;
+  filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.3));
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.header-logo::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+  border-radius: 14px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.header-logo:hover::before {
+  opacity: 1;
+}
+
+.header-logo:hover {
+  transform: scale(1.1) rotateY(10deg);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+}
+
+/* もしロゴに白い背景がある場合は、下記のクラスを追加してください */
+.header-logo.transparent-bg {
+  background-color: transparent;
+  mix-blend-mode: normal;
+  filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.3));
+}
+
 .header-left h1 {
-  color: #2c3e50;
+  color: var(--text-primary);
   margin: 0;
   font-size: 1.6rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /* ヘッダータブ */
 .header-tabs {
   display: flex;
-  gap: 0;
+  gap: 8px;
   align-items: center;
 }
 
 .tab-button {
-  padding: 8px 20px;
+  padding: 12px 20px;
   border: none;
-  background-color: transparent;
-  color: #6c757d;
+  background: #424242;
+  color: var(--text-primary);
   cursor: pointer;
-  border-radius: 0;
-  font-weight: 500;
-  font-size: 0.9rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
   transition: all 0.3s ease;
-  border-bottom: 3px solid transparent;
-  position: relative;
+  border: 1px solid transparent;
+}
+
+.tab-button::before {
+  display: none;
+}
+
+.tab-button:hover::before {
+  display: none;
 }
 
 .tab-button:hover {
-  background-color: #f8f9fa;
-  color: #495057;
+  background: #525252;
+  color: var(--accent-primary);
+  transform: translateY(-1px);
+  border-color: var(--accent-primary);
 }
 
 .tab-button.active {
-  color: #007bff;
-  background-color: #ffffff;
-  border-bottom-color: #007bff;
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
 }
 
-.tab-button.active::before {
-  content: '';
-  position: absolute;
-  bottom: -3px;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background-color: #007bff;
-  border-radius: 1px 1px 0 0;
+.tab-button.active::after {
+  display: none;
 }
 
 /* 右側のファイルセクション */

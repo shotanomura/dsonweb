@@ -14,7 +14,14 @@ function Header({
     <header className="app-header">
       <div className="header-main">
         <div className="header-left">
-          <h1>Data Science on Web</h1>
+          <div className="logo-title-container">
+            <img 
+              src="/logo.png" 
+              alt="Data Science on Web Logo" 
+              className="header-logo" 
+            />
+            <h1>Data Science on Web</h1>
+          </div>
           {data.length > 0 && (
             <nav className="header-tabs">
               <button 
@@ -34,6 +41,12 @@ function Header({
                 onClick={() => onTabChange('graph')}
               >
                 グラフ
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'ml' ? 'active' : ''}`}
+                onClick={() => onTabChange('ml')}
+              >
+                機械学習
               </button>
             </nav>
           )}

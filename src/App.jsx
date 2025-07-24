@@ -4,6 +4,7 @@ import Header from './Header'; // Headerコンポーネントをインポート
 import DataTable from './DataTable';   // 子コンポーネントをインポート
 import DataSummary from './DataSummary'; // 子コンポーネントをインポート
 import DataVisualize from './DataVisualize'; // 子コンポーネントをインポート
+import MachineLearning from './MachineLearning'; // 新しいコンポーネントをインポート
 import './App.css';
 
 function App() {
@@ -89,6 +90,9 @@ function App() {
                 chartStates={chartStates}
                 updateChartState={updateChartState}
               />
+            )}
+            {activeTab === 'ml' && (
+              <MachineLearning columns={columns} data={data} />
             )}
           </div>
         )}
