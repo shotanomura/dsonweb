@@ -63,3 +63,7 @@ Thumbs.db
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+
+# Netlify
+.netlify/
+*.netlify
