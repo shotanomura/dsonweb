@@ -170,4 +170,4 @@ async def predict_batch(request: BatchPredictionRequest):
 
 @app.get("/")
 def read_root():
-    return {"message": "LightGBM推論APIへようこそ"}
+    return {"message": "LightGBM推論APIへようこそそ"}

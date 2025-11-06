@@ -1,0 +1,57 @@
+name: Deploy Backend to HF Space
+
+on:
+  push:
+    branches:
+      - main  # メインのブランチ名 (masterの場合もあります)
+    paths:
+      - 'backend/**'  # backend/ フォルダ内に変更があった時だけ実行
+
+jobs:
+  deploy-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. メインリポジトリのコードをチェックアウト
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Python (3.10) をセットアップ
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # 3. Hugging Face Hub ライブラリをインストール
+      - name: Install huggingface_hub
+        run: pip install huggingface_hub
+
+      # 4. HF Hub に 'backend' フォルダの中身をアップロード
+      - name: Upload to Hugging Face Hub
+        env:
+          # ステップ2で設定したシークレット (HF_TOKEN) を読み込む
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          
+          # ★★★ あなたのHF SpaceのリポジトリIDに書き換えてください ★★★
+          HF_REPO_ID: "shotanomura/backend" 
+        
+        run: |
+          python -c "
+from huggingface_hub import HfApi
+import os
+
+api = HfApi(token=os.environ['HF_TOKEN'])
+repo_id = os.environ['HF_REPO_ID']
+
+print(f'Uploading files from /backend to {repo_id}...')
+
+# 'backend' フォルダの中身を、指定したSpaceリポジトリのルートにアップロード
+api.upload_folder(
+    folder_path='backend',
+    repo_id=repo_id,
+    repo_type='space',
+    # 既存のファイルを削除してからアップロード (不要なファイルが残らないようにするため)
+    delete_patterns='*' 
+)
+
+print('Upload complete.')
+"
