@@ -32,7 +32,7 @@ function CategoryNumericChart({ columns, data, chartState, updateChartState }) {
   // カテゴリデータの列を抽出
   const categoryColumns = useMemo(() => {
     if (data.length === 0) return [];
-    
+
     return columns.filter(column => {
       const uniqueValues = [...new Set(data.map(row => row[column]))];
       return uniqueValues.length <= 20 && uniqueValues.length >= 2;
@@ -42,12 +42,11 @@ function CategoryNumericChart({ columns, data, chartState, updateChartState }) {
   // 数値データの列を抽出
   const numericColumns = useMemo(() => {
     if (data.length === 0) return [];
-    
+
     return columns.filter(column => {
       return data.every(row => {
         const value = row[column];
-        if (value === null || String(value).trim() === '') return false;
-        return !isNaN(Number(value)) && isFinite(Number(value));
+        return value === '' || value === null || !isNaN(Number(value));
       });
     });
   }, [columns, data]);
@@ -63,7 +62,7 @@ function CategoryNumericChart({ columns, data, chartState, updateChartState }) {
     data.forEach(row => {
       const category = row[categoryColumn];
       const value = Number(row[numericColumn]);
-      
+
       if (!isNaN(value)) {
         if (!groups[category]) groups[category] = [];
         groups[category].push(value);
@@ -77,13 +76,13 @@ function CategoryNumericChart({ columns, data, chartState, updateChartState }) {
     // 集計方法に応じて計算
     switch (aggregationType) {
       case 'average':
-        aggregatedData = categories.map(cat => 
+        aggregatedData = categories.map(cat =>
           groups[cat].reduce((sum, val) => sum + val, 0) / groups[cat].length
         );
         yAxisLabel = `平均${numericColumn}`;
         break;
       case 'sum':
-        aggregatedData = categories.map(cat => 
+        aggregatedData = categories.map(cat =>
           groups[cat].reduce((sum, val) => sum + val, 0)
         );
         yAxisLabel = `合計${numericColumn}`;
@@ -101,7 +100,7 @@ function CategoryNumericChart({ columns, data, chartState, updateChartState }) {
         yAxisLabel = `最小${numericColumn}`;
         break;
       default:
-        aggregatedData = categories.map(cat => 
+        aggregatedData = categories.map(cat =>
           groups[cat].reduce((sum, val) => sum + val, 0) / groups[cat].length
         );
         yAxisLabel = `平均${numericColumn}`;
@@ -126,8 +125,8 @@ function CategoryNumericChart({ columns, data, chartState, updateChartState }) {
       legend: { position: 'top' },
       title: {
         display: true,
-        text: categoryColumn && numericColumn ? 
-          `${categoryColumn}別の${numericColumn}${getAggregationText()}` : 
+        text: categoryColumn && numericColumn ?
+          `${categoryColumn}別の${numericColumn}${getAggregationText()}` :
           'カテゴリ別数値分析',
       },
     },

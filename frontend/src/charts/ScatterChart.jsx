@@ -28,11 +28,10 @@ function ScatterChart({ columns, data, chartState, updateChartState }) {
   // 数値データの列のみを抽出
   const numericColumns = useMemo(() => {
     if (data.length === 0) return [];
-    
+
     return columns.filter(column => {
       return data.every(row => {
         const value = row[column];
-        if (value === null || String(value).trim() === '') return false;
         return !isNaN(Number(value)) && isFinite(Number(value));
       });
     });

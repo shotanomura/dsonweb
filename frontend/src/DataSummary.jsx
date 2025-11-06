@@ -30,22 +30,22 @@ function DataSummary({ columns, data }) {
       const val1 = row[col1];
       const val2 = row[col2];
       return val1 !== null && val1 !== '' && val1 !== undefined &&
-             val2 !== null && val2 !== '' && val2 !== undefined &&
-             !isNaN(Number(val1)) && !isNaN(Number(val2));
+        val2 !== null && val2 !== '' && val2 !== undefined &&
+        !isNaN(Number(val1)) && !isNaN(Number(val2));
     });
 
     if (validRows.length < 2) return null;
 
     const values1 = validRows.map(row => Number(row[col1]));
     const values2 = validRows.map(row => Number(row[col2]));
-    
+
     const mean1 = values1.reduce((acc, val) => acc + val, 0) / values1.length;
     const mean2 = values2.reduce((acc, val) => acc + val, 0) / values2.length;
-    
+
     let numerator = 0;
     let denominator1 = 0;
     let denominator2 = 0;
-    
+
     for (let i = 0; i < values1.length; i++) {
       const diff1 = values1[i] - mean1;
       const diff2 = values2[i] - mean2;
@@ -53,7 +53,7 @@ function DataSummary({ columns, data }) {
       denominator1 += diff1 * diff1;
       denominator2 += diff2 * diff2;
     }
-    
+
     const denominator = Math.sqrt(denominator1 * denominator2);
     return denominator === 0 ? 0 : numerator / denominator;
   };
@@ -77,10 +77,10 @@ function DataSummary({ columns, data }) {
 
     // データ行列を作成
     const matrix = validRows.map(row => [col1, col2, ...controlCols].map(col => Number(row[col])));
-    
+
     // 相関行列を計算
     const corrMatrix = calculateCorrelationMatrix(matrix);
-    
+
     if (!corrMatrix || corrMatrix.length < 2) return null;
 
     // 偏相関係数を計算（逆行列を使用）
@@ -100,7 +100,7 @@ function DataSummary({ columns, data }) {
   const calculateCorrelationMatrix = (matrix) => {
     const n = matrix.length;
     const p = matrix[0].length;
-    
+
     // 平均を計算
     const means = [];
     for (let j = 0; j < p; j++) {
@@ -109,7 +109,7 @@ function DataSummary({ columns, data }) {
 
     // 相関行列を計算
     const corrMatrix = Array(p).fill().map(() => Array(p).fill(0));
-    
+
     for (let i = 0; i < p; i++) {
       for (let j = 0; j < p; j++) {
         if (i === j) {
@@ -118,7 +118,7 @@ function DataSummary({ columns, data }) {
           let numerator = 0;
           let denom1 = 0;
           let denom2 = 0;
-          
+
           for (let k = 0; k < n; k++) {
             const diff1 = matrix[k][i] - means[i];
             const diff2 = matrix[k][j] - means[j];
@@ -126,13 +126,13 @@ function DataSummary({ columns, data }) {
             denom1 += diff1 * diff1;
             denom2 += diff2 * diff2;
           }
-          
+
           const denominator = Math.sqrt(denom1 * denom2);
           corrMatrix[i][j] = denominator === 0 ? 0 : numerator / denominator;
         }
       }
     }
-    
+
     return corrMatrix;
   };
 
@@ -140,7 +140,7 @@ function DataSummary({ columns, data }) {
   const invertMatrix = (matrix) => {
     const n = matrix.length;
     const augmented = matrix.map((row, i) => [...row, ...Array(n).fill(0).map((_, j) => i === j ? 1 : 0)]);
-    
+
     // ガウス・ジョーダン法
     for (let i = 0; i < n; i++) {
       // ピボット選択
@@ -150,18 +150,18 @@ function DataSummary({ columns, data }) {
           maxRow = k;
         }
       }
-      
+
       [augmented[i], augmented[maxRow]] = [augmented[maxRow], augmented[i]];
-      
+
       // 対角要素が0の場合は計算不可
       if (Math.abs(augmented[i][i]) < 1e-10) return null;
-      
+
       // 行を正規化
       const pivot = augmented[i][i];
       for (let j = 0; j < 2 * n; j++) {
         augmented[i][j] /= pivot;
       }
-      
+
       // 他の行を消去
       for (let k = 0; k < n; k++) {
         if (k !== i) {
@@ -172,7 +172,7 @@ function DataSummary({ columns, data }) {
         }
       }
     }
-    
+
     // 逆行列部分を抽出
     return augmented.map(row => row.slice(n));
   };
@@ -180,12 +180,12 @@ function DataSummary({ columns, data }) {
   // 選択した列との相関係数または偏相関係数を計算
   const correlationData = useMemo(() => {
     if (!selectedColumn || !numericColumns.includes(selectedColumn)) return [];
-    
+
     try {
       return numericColumns
         .filter(col => col !== selectedColumn && !controlColumns.includes(col))
         .map(col => {
-          const correlation = correlationType === 'partial' 
+          const correlation = correlationType === 'partial'
             ? calculatePartialCorrelation(selectedColumn, col, controlColumns)
             : calculateCorrelation(selectedColumn, col);
           return {
@@ -230,13 +230,13 @@ function DataSummary({ columns, data }) {
 
   return (
     <div className="data-summary">
-        
+
 
       {numericColumns.length > 0 && (
         <div className="numeric-stats">
 
-        <h3>数値列の統計</h3>
-        <table className="stats-table">
+          <h3>数値列の統計</h3>
+          <table className="stats-table">
             <thead>
               <tr>
                 <th>列名</th>
@@ -251,8 +251,8 @@ function DataSummary({ columns, data }) {
             <tbody>
               {numericColumns.map(column => {
                 const stats = calculateStats(column);
-                const EmptyCount = data.filter(row => 
-                    row[column] == '' || row[column] == null || row[column] == undefined
+                const EmptyCount = data.filter(row =>
+                  row[column] == '' || row[column] == null || row[column] == undefined
                 ).length;
                 return stats ? (
                   <tr key={column}>
@@ -286,15 +286,20 @@ function DataSummary({ columns, data }) {
           <tbody>
             {categoricalColumns.map(column => {
               const uniqueValues = new Set(data.map(row => row[column]));
-              const EmptyCount = data.filter(row => 
+              const EmptyCount = data.filter(row =>
                 row[column] == '' || row[column] == null || row[column] == undefined
               ).length;
+              const uniqueValuesArray = Array.from(uniqueValues);
+              const displayLimit = 5;
+              const displayText = uniqueValuesArray.length > displayLimit
+                ? `${uniqueValuesArray.slice(0, displayLimit).join(', ')} 他${uniqueValuesArray.length - displayLimit}件`
+                : uniqueValuesArray.join(', ');
               return (
                 <tr key={column}>
                   <td>{column}</td>
                   <td>{EmptyCount}</td>
                   <td>{uniqueValues.size}</td>
-                  <td>{Array.from(uniqueValues).join(', ')}</td>
+                  <td>{displayText}</td>
                 </tr>
               );
             })}
@@ -302,7 +307,7 @@ function DataSummary({ columns, data }) {
         </table>
       </div>
 
-        {/* 相関係数分析セクション */}
+      {/* 相関係数分析セクション */}
       {numericColumns.length > 1 && (
         <div className="correlation-analysis">
           <h3>相関係数分析</h3>
@@ -363,7 +368,7 @@ function DataSummary({ columns, data }) {
                 <div className="correlation-results">
                   <h4>
                     {selectedColumn} との{correlationType === 'partial' ? '偏相関係数' : '相関係数'}
-                    {correlationType === 'partial' && controlColumns.length > 0 && 
+                    {correlationType === 'partial' && controlColumns.length > 0 &&
                       ` (制御変数: ${controlColumns.join(', ')})`
                     }
                   </h4>
