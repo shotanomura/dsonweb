@@ -1,6 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import CustomSelect from './components/CustomSelect';
 
+// 環境変数から設定を読み込み
+const WS_BASE_URL = import.meta.env.VITE_BACKEND_WS_URL || 'ws://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8000';
+
 function MachineLearning({ columns, data }) {
   const [targetColumn, setTargetColumn] = useState('');
   const [featureColumns, setFeatureColumns] = useState([]);
@@ -91,7 +95,7 @@ function MachineLearning({ columns, data }) {
   const connectWebSocket = () => {
     return new Promise((resolve, reject) => {
       try {
-        const ws = new WebSocket('ws://localhost:8000/ws/train');
+        const ws = new WebSocket(`${WS_BASE_URL}/ws/train`);
         websocketRef.current = ws;
 
         ws.onopen = () => {
@@ -160,7 +164,7 @@ function MachineLearning({ columns, data }) {
       const formData = new FormData();
       formData.append('file', csvFile);
       
-      const uploadResponse = await fetch('http://localhost:8000/upload', {
+      const uploadResponse = await fetch(`${API_BASE_URL}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -261,7 +265,7 @@ function MachineLearning({ columns, data }) {
       addLog('推論を開始します...', 'info');
       
       // バッチ推論APIを呼び出し
-      const response = await fetch('http://localhost:8000/predict_batch', {
+      const response = await fetch(`${API_BASE_URL}/predict_batch`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
