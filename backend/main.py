@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 FastAPI バックエンドサーバーのメインエントリーポイント
-モノレポ構成対応版
+モノレポ構成対応
 """
 
 import uvicorn
