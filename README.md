@@ -146,8 +146,6 @@ VITE_BACKEND_WS_URL=ws://localhost:8000
 VITE_BACKEND_API_URL=http://localhost:8000
 ```
 
-### VSCode設定
-プロジェクトルートで開発することを推奨します。`.vscode/settings.json`で各ディレクトリ用の設定が自動適用されます。
 
 ## 🚀 デプロイメント
 
@@ -169,11 +167,16 @@ GitHub Actionsで自動デプロイが設定されています。
 **必要なシークレット**:
 - `HF_TOKEN`: Hugging Face APIトークン
 
-その他のデプロイ先:
-- Railway
-- Render
-- Heroku
-- DigitalOcean App Platform
+**デプロイ先（暫定）**
+https://elaborate-trifle-638f92.netlify.app/
+
+## 今後の展望
+- デザイン性の向上（特に初期画面）
+- 前処理機能の追加（正規化など）
+- ハイパラ調整などの学習機能追加
+- 登録、ログイン機能の実装
+- サーバーの有料化、スケーラビリティの検討
+- 学習コードのダウンロード（pythonベース）
 
 ## 📝 ライセンス
 
