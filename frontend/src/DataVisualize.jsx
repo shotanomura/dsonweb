@@ -29,11 +29,11 @@ function DataVisualize({ columns, data, chartStates, updateChartState }) {
 
   return (
     <div className="data-visualize">
-      <div className="chart-tabs">
+      <div className="sub-tabs-container">
         {chartTabs.map(tab => (
           <button
             key={tab.id}
-            className={`chart-tab-button ${activeChartTab === tab.id ? 'active' : ''}`}
+            className={`sub-tab-button ${activeChartTab === tab.id ? 'active' : ''}`}
             onClick={() => setActiveChartTab(tab.id)}
           >
             {tab.label}
@@ -41,7 +41,7 @@ function DataVisualize({ columns, data, chartStates, updateChartState }) {
         ))}
       </div>
 
-      <div className="chart-tab-content">
+      <div className="sub-tab-content">
         {renderActiveChart()}
       </div>
     </div>

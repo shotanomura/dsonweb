@@ -1,29 +1,28 @@
-/* ヘッダーのメインスタイル */
+/* Header.css - Header specific styles */
+
 .app-header {
-  background: var(--bg-card);
+  background-color: #fff;
   border-bottom: 1px solid var(--border-primary);
-  padding: 20px 40px;
-  box-shadow: var(--shadow-light);
+  padding: 0 40px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   position: sticky;
   top: 0;
   z-index: 100;
-  position: relative;
 }
 
-/* ヘッダーメイン部分 */
 .header-main {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  height: 70px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: 40px;
 }
 
-/* ロゴとタイトルのコンテナ */
 .logo-title-container {
   display: flex;
   align-items: center;
@@ -31,109 +30,46 @@
 }
 
 .header-logo {
-  width: 60px;
-  height: 60px;
-  object-fit: contain;
-  border-radius: 12px;
-  background: var(--bg-glass);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border-primary);
-  padding: 8px;
-  filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.3));
-  transition: all 0.3s ease;
-  position: relative;
+  height: 40px;
+  width: auto;
 }
 
-.header-logo::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
-  border-radius: 14px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: -1;
-}
-
-.header-logo:hover::before {
-  opacity: 1;
-}
-
-.header-logo:hover {
-  transform: scale(1.1) rotateY(10deg);
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
-}
-
-/* もしロゴに白い背景がある場合は、下記のクラスを追加してください */
-.header-logo.transparent-bg {
-  background-color: transparent;
-  mix-blend-mode: normal;
-  filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.3));
-}
-
-.header-left h1 {
+.app-header h1 {
+  font-size: 1.5rem;
   color: var(--text-primary);
   margin: 0;
-  font-size: 1.6rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
-/* ヘッダータブ */
 .header-tabs {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  gap: 10px;
 }
 
 .tab-button {
-  padding: 12px 20px;
+  padding: 8px 16px;
   border: none;
-  background: #424242;
-  color: var(--text-primary);
-  cursor: pointer;
-  border-radius: 8px;
-  font-weight: 600;
+  background: transparent;
+  color: var(--text-secondary);
   font-size: 0.95rem;
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
-}
-
-.tab-button::before {
-  display: none;
-}
-
-.tab-button:hover::before {
-  display: none;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
 }
 
 .tab-button:hover {
-  background: #525252;
+  background-color: var(--bg-secondary);
   color: var(--accent-primary);
-  transform: translateY(-1px);
-  border-color: var(--accent-primary);
 }
 
 .tab-button.active {
-  background: var(--accent-primary);
-  color: #ffffff;
-  border-color: var(--accent-primary);
+  background-color: var(--accent-primary);
+  color: #fff;
 }
 
-.tab-button.active::after {
-  display: none;
-}
-
-/* 右側のファイルセクション */
 .header-right {
-  display: flex;
-  align-items: center;
-}
-
-.file-section {
   display: flex;
   align-items: center;
 }
@@ -141,109 +77,28 @@
 .file-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
 }
 
 .filename-text {
-  color: #495057;
-  font-size: 0.85rem;
-  font-weight: 500;
-  max-width: 200px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 6px 12px;
+  border-radius: 20px;
 }
 
 .file-change-button {
-  display: inline-block;
-  padding: 4px 10px;
-  background-color: #6c757d;
-  color: white;
-  border-radius: 4px;
+  font-size: 0.85rem;
+  color: var(--accent-primary);
   cursor: pointer;
-  transition: background-color 0.3s ease;
-  font-weight: 500;
-  font-size: 0.75rem;
-  border: none;
+  font-weight: 600;
 }
 
 .file-change-button:hover {
-  background-color: #495057;
+  text-decoration: underline;
 }
 
-.file-uploader-label {
-  display: inline-block;
-  padding: 8px 16px;
-  background-color: #007bff;
-  color: white;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  font-weight: 500;
-  font-size: 0.9rem;
-  border: none;
-}
-
-.file-uploader-label:hover {
-  background-color: #0056b3;
-  transform: translateY(-1px);
-}
-
-/* ファイルinputを非表示 */
-input[type="file"] {
-  display: none;
-}
-
-/* エラーセクション */
 .error-section {
-  margin-top: 10px;
-}
-
-.error {
-  color: #dc3545;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  padding: 8px;
-  border-radius: 4px;
-  margin: 0;
-  font-size: 0.8rem;
-}
-
-/* レスポンシブデザイン */
-@media (max-width: 1024px) {
-  .header-main {
-    flex-direction: column;
-    gap: 15px;
-    align-items: flex-start;
-  }
-  
-  .header-left {
-    flex-direction: column;
-    gap: 15px;
-    align-items: flex-start;
-  }
-  
-  .header-tabs {
-    margin-left: 0;
-  }
-}
-
-@media (max-width: 768px) {
-  .app-header {
-    padding: 10px 20px;
-  }
-  
-  .header-left h1 {
-    font-size: 1.4rem;
-  }
-  
-  .tab-button {
-    padding: 6px 15px;
-    font-size: 0.8rem;
-  }
-  
-  .filename-text {
-    font-size: 0.8rem;
-    max-width: 150px;
-  }
+  padding: 10px 0 20px;
 }

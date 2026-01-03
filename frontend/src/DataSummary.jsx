@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import CustomSelect from './components/CustomSelect';
+import './App.css'; // Ensure CSS is imported for tab styles
 
 function DataSummary({ columns, data }) {
   const [selectedColumn, setSelectedColumn] = useState('');
   const [correlationType, setCorrelationType] = useState('correlation'); // 'correlation' or 'partial'
   const [controlColumns, setControlColumns] = useState([]);
+  const [activeTab, setActiveTab] = useState('numeric'); // 'numeric', 'categorical', 'correlation'
 
   if (!data || data.length === 0) {
     return <div>データがありません</div>;
@@ -232,180 +234,206 @@ function DataSummary({ columns, data }) {
     <div className="data-summary">
 
 
-      {numericColumns.length > 0 && (
-        <div className="numeric-stats">
-
-          <h3>数値列の統計</h3>
-          <table className="stats-table">
-            <thead>
-              <tr>
-                <th>列名</th>
-                <th>欠損</th>
-                <th>平均</th>
-                <th>中央値</th>
-                <th>最小値</th>
-                <th>最大値</th>
-                <th>合計</th>
-              </tr>
-            </thead>
-            <tbody>
-              {numericColumns.map(column => {
-                const stats = calculateStats(column);
-                const EmptyCount = data.filter(row =>
-                  row[column] == '' || row[column] == null || row[column] == undefined
-                ).length;
-                return stats ? (
-                  <tr key={column}>
-                    <td>{column}</td>
-                    <td>{EmptyCount}</td>
-                    <td>{stats.mean}</td>
-                    <td>{stats.median}</td>
-                    <td>{stats.min}</td>
-                    <td>{stats.max}</td>
-                    <td>{stats.sum}</td>
-                  </tr>
-                ) : null;
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-
-      <div className="column-info">
-        <h3>カテゴリ列の情報</h3>
-        <table className="column-table">
-          <thead>
-            <tr>
-              <th>列名</th>
-              <th>欠損</th>
-              <th>ユニーク値数</th>
-              <th>選択肢</th>
-            </tr>
-          </thead>
-          <tbody>
-            {categoricalColumns.map(column => {
-              const uniqueValues = new Set(data.map(row => row[column]));
-              const EmptyCount = data.filter(row =>
-                row[column] == '' || row[column] == null || row[column] == undefined
-              ).length;
-              const uniqueValuesArray = Array.from(uniqueValues);
-              const displayLimit = 5;
-              const displayText = uniqueValuesArray.length > displayLimit
-                ? `${uniqueValuesArray.slice(0, displayLimit).join(', ')} 他${uniqueValuesArray.length - displayLimit}件`
-                : uniqueValuesArray.join(', ');
-              return (
-                <tr key={column}>
-                  <td>{column}</td>
-                  <td>{EmptyCount}</td>
-                  <td>{uniqueValues.size}</td>
-                  <td>{displayText}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="sub-tabs-container">
+        {numericColumns.length > 0 && (
+          <button 
+            className={`sub-tab-button ${activeTab === 'numeric' ? 'active' : ''}`}
+            onClick={() => setActiveTab('numeric')}
+          >
+            数値列の統計
+          </button>
+        )}
+        <button 
+          className={`sub-tab-button ${activeTab === 'categorical' ? 'active' : ''}`}
+          onClick={() => setActiveTab('categorical')}
+        >
+          カテゴリ列の情報
+        </button>
+        {numericColumns.length > 1 && (
+          <button 
+            className={`sub-tab-button ${activeTab === 'correlation' ? 'active' : ''}`}
+            onClick={() => setActiveTab('correlation')}
+          >
+            相関係数分析
+          </button>
+        )}
       </div>
 
-      {/* 相関係数分析セクション */}
-      {numericColumns.length > 1 && (
-        <div className="correlation-analysis">
-          <h3>相関係数分析</h3>
-          <div className="correlation-layout">
-            <div className="correlation-controls-left">
-              <CustomSelect
-                label="分析タイプ:"
-                id="correlation-type"
-                value={correlationType}
-                onChange={setCorrelationType}
-                options={[
-                  { value: 'correlation', label: '単純相関係数' },
-                  { value: 'partial', label: '偏相関係数' }
-                ]}
-                placeholder="分析タイプを選択"
-              />
+      <div className="sub-tab-content">
+        {activeTab === 'numeric' && numericColumns.length > 0 && (
+          <div className="numeric-stats">
+            <h3>数値列の統計</h3>
+            <table className="stats-table">
+              <thead>
+                <tr>
+                  <th>列名</th>
+                  <th>欠損</th>
+                  <th>平均</th>
+                  <th>中央値</th>
+                  <th>最小値</th>
+                  <th>最大値</th>
+                  <th>合計</th>
+                </tr>
+              </thead>
+              <tbody>
+                {numericColumns.map(column => {
+                  const stats = calculateStats(column);
+                  const EmptyCount = data.filter(row =>
+                    row[column] == '' || row[column] == null || row[column] == undefined
+                  ).length;
+                  return stats ? (
+                    <tr key={column}>
+                      <td>{column}</td>
+                      <td>{EmptyCount}</td>
+                      <td>{stats.mean}</td>
+                      <td>{stats.median}</td>
+                      <td>{stats.min}</td>
+                      <td>{stats.max}</td>
+                      <td>{stats.sum}</td>
+                    </tr>
+                  ) : null;
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-              <CustomSelect
-                label="基準列を選択:"
-                id="correlation-column"
-                value={selectedColumn}
-                onChange={setSelectedColumn}
-                options={[
-                  { value: '', label: '選択してください' },
-                  ...numericColumns.map(column => ({ value: column, label: column }))
-                ]}
-                placeholder="基準列を選択"
-              />
+        {activeTab === 'categorical' && (
+          <div className="column-info">
+            <h3>カテゴリ列の情報</h3>
+            <table className="column-table">
+              <thead>
+                <tr>
+                  <th>列名</th>
+                  <th>欠損</th>
+                  <th>ユニーク値数</th>
+                  <th>選択肢</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categoricalColumns.map(column => {
+                  const uniqueValues = new Set(data.map(row => row[column]));
+                  const EmptyCount = data.filter(row =>
+                    row[column] == '' || row[column] == null || row[column] == undefined
+                  ).length;
+                  const uniqueValuesArray = Array.from(uniqueValues);
+                  const displayLimit = 5;
+                  const displayText = uniqueValuesArray.length > displayLimit
+                    ? `${uniqueValuesArray.slice(0, displayLimit).join(', ')} 他${uniqueValuesArray.length - displayLimit}件`
+                    : uniqueValuesArray.join(', ');
+                  return (
+                    <tr key={column}>
+                      <td>{column}</td>
+                      <td>{EmptyCount}</td>
+                      <td>{uniqueValues.size}</td>
+                      <td>{displayText}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-              {correlationType === 'partial' && (
-                <div className="control-variables">
-                  <label>制御変数（複数選択可）:</label>
-                  {numericColumns
-                    .filter(col => col !== selectedColumn)
-                    .map(column => (
-                      <div key={column} className="control-variable-item">
-                        <input
-                          type="checkbox"
-                          id={`control-${column}`}
-                          checked={controlColumns.includes(column)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setControlColumns(prev => [...prev, column]);
-                            } else {
-                              setControlColumns(prev => prev.filter(col => col !== column));
-                            }
-                          }}
-                        />
-                        <label htmlFor={`control-${column}`}>{column}</label>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
+        {activeTab === 'correlation' && numericColumns.length > 1 && (
+          <div className="correlation-analysis">
+            <h3>相関係数分析</h3>
+            <div className="correlation-layout">
+              <div className="correlation-controls-left">
+                <CustomSelect
+                  label="分析タイプ:"
+                  id="correlation-type"
+                  value={correlationType}
+                  onChange={setCorrelationType}
+                  options={[
+                    { value: 'correlation', label: '単純相関係数' },
+                    { value: 'partial', label: '偏相関係数' }
+                  ]}
+                  placeholder="分析タイプを選択"
+                />
 
-            <div className="correlation-results-right">
-              {selectedColumn && correlationData.length > 0 ? (
-                <div className="correlation-results">
-                  <h4>
-                    {selectedColumn} との{correlationType === 'partial' ? '偏相関係数' : '相関係数'}
-                    {correlationType === 'partial' && controlColumns.length > 0 &&
-                      ` (制御変数: ${controlColumns.join(', ')})`
-                    }
-                  </h4>
-                  <table className="correlation-table">
-                    <thead>
-                      <tr>
-                        <th>列名</th>
-                        <th>{correlationType === 'partial' ? '偏相関係数' : '相関係数'}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {correlationData.map(({ column, correlation }) => {
-                        return (
-                          <tr key={column}>
-                            <td>{column}</td>
-                            <td className={correlation > 0 ? 'positive' : 'negative'}>
-                              {correlation.toFixed(3)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : selectedColumn ? (
-                <div className="correlation-placeholder">
-                  <p>{correlationType === 'partial' ? '偏相関係数' : '相関係数'}を計算できる他の数値列がありません。</p>
-                </div>
-              ) : (
-                <div className="correlation-placeholder">
-                  <p>基準列を選択してください。</p>
-                </div>
-              )}
+                <CustomSelect
+                  label="基準列を選択:"
+                  id="correlation-column"
+                  value={selectedColumn}
+                  onChange={setSelectedColumn}
+                  options={[
+                    { value: '', label: '選択してください' },
+                    ...numericColumns.map(column => ({ value: column, label: column }))
+                  ]}
+                  placeholder="基準列を選択"
+                />
+
+                {correlationType === 'partial' && (
+                  <div className="control-variables">
+                    <label>制御変数（複数選択可）:</label>
+                    {numericColumns
+                      .filter(col => col !== selectedColumn)
+                      .map(column => (
+                        <div key={column} className="control-variable-item">
+                          <input
+                            type="checkbox"
+                            id={`control-${column}`}
+                            checked={controlColumns.includes(column)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setControlColumns(prev => [...prev, column]);
+                              } else {
+                                setControlColumns(prev => prev.filter(col => col !== column));
+                              }
+                            }}
+                          />
+                          <label htmlFor={`control-${column}`}>{column}</label>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="correlation-results-right">
+                {selectedColumn && correlationData.length > 0 ? (
+                  <div className="correlation-results">
+                    <h4>
+                      {selectedColumn} との{correlationType === 'partial' ? '偏相関係数' : '相関係数'}
+                      {correlationType === 'partial' && controlColumns.length > 0 &&
+                        ` (制御変数: ${controlColumns.join(', ')})`
+                      }
+                    </h4>
+                    <table className="correlation-table">
+                      <thead>
+                        <tr>
+                          <th>列名</th>
+                          <th>{correlationType === 'partial' ? '偏相関係数' : '相関係数'}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {correlationData.map(({ column, correlation }) => {
+                          return (
+                            <tr key={column}>
+                              <td>{column}</td>
+                              <td className={correlation > 0 ? 'positive' : 'negative'}>
+                                {correlation.toFixed(3)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : selectedColumn ? (
+                  <div className="correlation-placeholder">
+                    <p>{correlationType === 'partial' ? '偏相関係数' : '相関係数'}を計算できる他の数値列がありません。</p>
+                  </div>
+                ) : (
+                  <div className="correlation-placeholder">
+                    <p>基準列を選択してください。</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

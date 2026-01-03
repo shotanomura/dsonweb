@@ -108,46 +108,49 @@ input[type="file"] {
   transform: translateY(-1px);
 }
 
-/* グラフタブのスタイル */
-.chart-tabs {
+/* サブタブの共通スタイル (.chart-tabs もこれに移行) */
+.sub-tabs-container {
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin: 5px 0 10px 0;
-  border-bottom: 1px solid var(--border-primary);
-  padding-bottom: 10px;
+  margin: 5px 0 20px 0;
+  border-bottom: 2px solid var(--border-primary);
+  padding-bottom: 0;
 }
 
-.chart-tab-button {
-  padding: 10px 18px;
-  border: none;
+.sub-tab-button {
+  padding: 10px 20px;
+  border: 1px solid var(--border-primary);
+  border-bottom: 2px solid var(--border-primary);
   background: var(--bg-secondary);
   color: var(--text-primary);
   cursor: pointer;
-  border-radius: 8px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   transition: all 0.3s ease;
-  border: 1px solid var(--border-primary);
+  margin-bottom: -2px;
+  border-radius: 8px 8px 0 0;
+  min-width: 140px;
 }
 
-.chart-tab-button:hover {
+.sub-tab-button:hover {
   background: var(--bg-glass);
   color: var(--accent-primary);
-  transform: translateY(-1px);
-  border-color: var(--accent-primary);
 }
 
-.chart-tab-button.active {
+.sub-tab-button.active {
   background: var(--accent-primary);
   color: #ffffff;
   border-color: var(--accent-primary);
+  border-bottom: 2px solid var(--accent-primary);
+  z-index: 1;
 }
 
-.chart-tab-content {
+.sub-tab-content {
   padding: 5px 0;
-  height: calc(100% - 50px);
+  height: calc(100% - 60px);
   overflow-y: auto;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 /* チャートコンポーネントのスタイル */
@@ -332,45 +335,7 @@ tbody tr:last-child td {
   opacity: 0.7;
 }
 
-.tab-container {
-  margin: 20px 0;
-  border-bottom: 2px solid var(--border-primary);
-  width: 100%;
-  box-sizing: border-box;
-  text-align: center;
-  position: relative;
-}
-
-.tab-button {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-bottom: 2px solid var(--border-primary);
-  padding: 10px 20px;
-  margin: 0;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  color: var(--text-primary);
-  box-sizing: border-box;
-  min-width: 120px;
-  display: inline-block;
-  position: relative;
-  margin-bottom: -2px;
-}
-
-.tab-button:hover {
-  background-color: var(--bg-glass);
-  color: var(--accent-primary);
-}
-
-.tab-button.active {
-  background-color: var(--accent-primary);
-  color: white;
-  border-color: var(--accent-primary);
-  border-bottom: 2px solid var(--accent-primary);
-  font-weight: bold;
-  z-index: 1;
-}
+/* 以前の tab-button クラスは削除し、sub-tab-button に統一します */
 
 .tab-content {
   margin-top: 5px;
@@ -393,11 +358,15 @@ tbody tr:last-child td {
   }
 }
 
-.data-summary {
+/* コンテンツパネル共通スタイル（タブ切り替え時のズレ防止） */
+.data-summary,
+.data-visualize {
   padding: 20px;
   width: 100%;
   box-sizing: border-box;
   text-align: center;
+  margin: 0; /* マージンを統一 */
+  min-height: 600px; /* 高さを確保してカクつきを防止 */
 }
 
 .data-summary h2,
@@ -522,9 +491,7 @@ tbody tr:last-child td {
   color: #495057;
 }
 
-.data-visualize {
-  margin: 20px 0;
-}
+
 
 .chart-controls {
   display: flex;
@@ -572,10 +539,7 @@ tbody tr:last-child td {
   color: #6c757d;
 }
 
-.data-visualize {
-  margin-top: 10px;
-  /* border-top: 1px solid #e0e0e0; */
-}
+
 
 .chart-controls {
   display: flex;

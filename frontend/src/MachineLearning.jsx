@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import CustomSelect from './components/CustomSelect';
 
 // 環境変数から設定を読み込み
-const WS_BASE_URL = import.meta.env.VITE_BACKEND_WS_URL || 'ws://localhost:8000';
-const API_BASE_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8000';
+const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 function MachineLearning({ columns, data }) {
   const [targetColumn, setTargetColumn] = useState('');

@@ -5,3 +5,8 @@ pandas
 lightgbm
 python-multipart
 debugpy
+sqlalchemy
+passlib[bcrypt]
+python-jose[cryptography]
+email-validator
+bcrypt==4.0.1
