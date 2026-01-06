@@ -1,6 +1,6 @@
 # DSOWA - Data Science on Web Application
 
-データサイエンスのWebアプリケーション - CSVデータの可視化・分析・機械学習をブラウザで実現
+データサイエンスの Web アプリケーション - CSV データの可視化・分析・機械学習をブラウザで実現
 
 ## 📁 プロジェクト構造
 
@@ -46,6 +46,7 @@ npm run install:all
 ```
 
 **注意**: バックエンドでは`libomp`が必要です（macOS）:
+
 ```bash
 # Homebrewの場合
 brew install libomp
@@ -73,54 +74,59 @@ npm run dev:backend
 
 ## 📦 利用可能なスクリプト
 
-| コマンド | 説明 |
-|---------|------|
-| `npm run dev` | フロントエンドとバックエンドを同時起動 |
-| `npm run dev:frontend` | フロントエンドのみ起動（Vite開発サーバー） |
-| `npm run dev:backend` | バックエンドのみ起動（Uvicorn） |
-| `npm run build` | プロダクション用ビルド |
-| `npm run install:all` | 全依存関係のインストール |
-| `npm run clean` | 生成ファイルの削除 |
-| `npm run lint` | ESLintでコード解析 |
-| `npm run test` | テストの実行 |
+| コマンド               | 説明                                        |
+| ---------------------- | ------------------------------------------- |
+| `npm run dev`          | フロントエンドとバックエンドを同時起動      |
+| `npm run dev:frontend` | フロントエンドのみ起動（Vite 開発サーバー） |
+| `npm run dev:backend`  | バックエンドのみ起動（Uvicorn）             |
+| `npm run build`        | プロダクション用ビルド                      |
+| `npm run install:all`  | 全依存関係のインストール                    |
+| `npm run clean`        | 生成ファイルの削除                          |
+| `npm run lint`         | ESLint でコード解析                         |
+| `npm run test`         | テストの実行                                |
 
 ## 🛠 技術スタック
 
 ### フロントエンド
-- **React 19** - UIライブラリ
+
+- **React 19** - UI ライブラリ
 - **Vite 7** - 高速ビルドツール
 - **Chart.js** - データ可視化
 
 ### バックエンド
-- **FastAPI** - Pythonウェブフレームワーク
-- **uvicorn** - ASGIサーバー
-- **scikit-learn** - 機械学習ライブラリ
 
+- **FastAPI** - Python ウェブフレームワーク
+- **uvicorn** - ASGI サーバー
+- **scikit-learn** - 機械学習ライブラリ
 
 ## 📊 主な機能
 
 ### データ分析
-- ✅ CSVファイルのアップロードと解析
+
+- ✅ CSV ファイルのアップロードと解析
 - ✅ 数値列の統計情報（平均、中央値、最小値、最大値、合計）
 - ✅ カテゴリ列のユニーク値分析
 - ✅ 相関係数分析（単純相関・偏相関）
 - ✅ 欠損値の検出と表示
 
 ### データ可視化
+
 - ✅ カテゴリ別数値分析（棒グラフ）
-- ✅ 散布図（2変数の関係性）
+- ✅ 散布図（2 変数の関係性）
 - ✅ 積み上げ棒グラフ（カテゴリ別分布）
 - ✅ リアルタイムチャート更新
 
 ### 機械学習
+
 - ✅ 分類・回帰モデルの訓練
-- ✅ WebSocketによるリアルタイムログ表示
-- ✅ モデル評価（精度、R²スコア）
-- ✅ バッチ推論とCSVダウンロード
+- ✅ WebSocket によるリアルタイムログ表示
+- ✅ モデル評価（精度、R² スコア）
+- ✅ バッチ推論と CSV ダウンロード
 
 ### UI/UX
+
 - ✅ レスポンシブデザイン
-- ✅ ガラスモーフィズムUI
+- ✅ ガラスモーフィズム UI
 - ✅ タブ切り替えによる機能分離
 - ✅ 直感的な操作性
 
@@ -133,50 +139,56 @@ npm run dev:backend
 ## 🔧 開発環境
 
 ### 必要な環境
+
 - **Node.js** 18.0.0 以上
 - **Python** 3.8 以上
 - **npm** 8.0.0 以上
 
 ### 環境変数（オプション）
 
-フロントエンドで`.env`ファイルを作成し、バックエンドURLを設定可能:
+フロントエンドで`.env`ファイルを作成し、バックエンド URL を設定可能:
 
 ```bash
-VITE_BACKEND_WS_URL=ws://localhost:8000
-VITE_BACKEND_API_URL=http://localhost:8000
+VITE_WS_URL=ws://localhost:8000
+VITE_API_URL=http://localhost:8000
 ```
-
 
 ## 🚀 デプロイメント
 
 ### フロントエンド（Netlify）
+
 自動デプロイが設定されています。
 
-**Netlify設定**:
+**Netlify 設定**:
+
 - Base directory: `frontend`
 - Build command: `npm ci && npm run build`
 - Publish directory: `frontend/dist`
 
 ### バックエンド（Hugging Face Spaces）
-GitHub Actionsで自動デプロイが設定されています。
+
+GitHub Actions で自動デプロイが設定されています。
 
 **デプロイ条件**:
+
 - `backend/`フォルダに変更があった場合
 - `main`ブランチへのプッシュ時
 
 **必要なシークレット**:
-- `HF_TOKEN`: Hugging Face APIトークン
+
+- `HF_TOKEN`: Hugging Face API トークン
 
 **デプロイ先（暫定）**
 https://elaborate-trifle-638f92.netlify.app/
 
 ## 今後の展望
+
 - デザイン性の向上（特に初期画面）
 - 前処理機能の追加（正規化など）
 - ハイパラ調整などの学習機能追加
 - 登録、ログイン機能の実装
 - サーバーの有料化、スケーラビリティの検討
-- 学習コードのダウンロード（pythonベース）
+- 学習コードのダウンロード（python ベース）
 
 ## 📝 ライセンス
 
@@ -188,4 +200,4 @@ MIT License
 
 ---
 
-**プロジェクトURL**: https://github.com/shotanomura/dsonweb
+**プロジェクト URL**: https://github.com/shotanomura/dsonweb

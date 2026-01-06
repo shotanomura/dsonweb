@@ -39,6 +39,18 @@ def get_db():
     finally:
         db.close()
 
+import os
+import boto3
+from botocore.exceptions import ClientError
+# ... other imports ...
+
+# --- 環境判定 ---
+IS_LAMBDA = os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None
+
+if IS_LAMBDA:
+    dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-1')
+    user_table = dynamodb.Table('Users')
+
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -53,7 +65,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         token_data = schemas.TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = db.query(models.User).filter(models.User.username == token_data.username).first()
+    
+    if IS_LAMBDA:
+        try:
+            response = user_table.get_item(Key={'username': token_data.username})
+            user = response.get('Item')
+        except ClientError:
+            raise credentials_exception
+    else:
+        user = db.query(models.User).filter(models.User.username == token_data.username).first()
+        
     if user is None:
         raise credentials_exception
     return user

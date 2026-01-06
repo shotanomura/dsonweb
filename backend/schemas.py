@@ -13,7 +13,7 @@ class UserLogin(BaseModel):
     password: str
 
 class User(UserBase):
-    id: int
+    id: Optional[int] = None
     
     class Config:
         from_attributes = True
