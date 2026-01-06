@@ -4,10 +4,11 @@ import DataTable from '../DataTable';
 import DataSummary from '../DataSummary';
 import DataVisualize from '../DataVisualize';
 import MachineLearning from '../MachineLearning';
-import WelcomeScreen from './WelcomeScreen';
+import CsvUploader from '../CsvUploader';
 import '../App.css';
 import { useAuth } from '../context/AuthContext';
 import Papa from 'papaparse';
+import HistoryPopup from './HistoryPopup';
 
 function Dashboard() {
   const { token } = useAuth();
@@ -18,6 +19,7 @@ function Dashboard() {
   const [activeTab, setActiveTab] = useState('data');
   const [fileList, setFileList] = useState([]);
   const [loadingFile, setLoadingFile] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // --- ファイル一覧取得 ---
   const fetchFileList = async () => {
@@ -120,6 +122,31 @@ function Dashboard() {
     setError(errorMessage);
   };
 
+  const handleDeleteFile = async (uploadId) => {
+      try {
+          const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+          const res = await fetch(`${API_BASE_URL}/files/${uploadId}`, {
+             method: 'DELETE',
+             headers: {
+                 'Authorization': `Bearer ${token}`
+             }
+          });
+
+          if(res.ok) {
+              // 成功したらリスト更新
+              fetchFileList();
+              // もし表示中のファイルだったらクリアする？ 
+              // 複雑になるので今回はそのままでもいいが、ファイルが消えたことは認識させる
+          } else {
+              const err = await res.json();
+              alert(`削除に失敗しました: ${err.detail || err.error}`);
+          }
+      } catch(e) {
+          console.error("Delete failed", e);
+          alert("削除処理中にエラーが発生しました");
+      }
+  };
+
   const handleTabChange = (tab) => {
     setActiveTab(tab);
   };
@@ -144,53 +171,12 @@ function Dashboard() {
         onDataParsed={handleDataParsed}
         onError={handleError}
         onTabChange={handleTabChange}
+        onUploadComplete={fetchFileList}
+        onToggleHistory={() => setIsHistoryOpen(true)}
       />
       
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {/* サイドバー: ファイル履歴 (データがある場合のみ、または常に表示？ 今回は常に表示してみる) */}
-          <aside style={{
-              width: '250px',
-              backgroundColor: '#f8f9fa', 
-              borderRight: '1px solid #dee2e6',
-              padding: '1rem',
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column'
-          }}>
-              <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#495057' }}>📁 アップロード履歴</h3>
-              {loadingFile && <div style={{fontSize:'0.8rem', color:'#666'}}>Wait... Loading...</div>}
-              
-              {fileList.length === 0 && <p style={{fontSize:'0.8rem', color:'#999'}}>履歴はありません</p>}
-              
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  {fileList.map((file) => (
-                      <li key={file.upload_id} 
-                          onClick={() => handleLoadRemoteFile(file.s3_key, file.filename)}
-                          style={{
-                              padding: '0.75rem',
-                              marginBottom: '0.5rem',
-                              backgroundColor: '#fff',
-                              border: '1px solid #e9ecef',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '0.9rem',
-                              transition: 'all 0.2s',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.borderColor = '#007bff'}
-                          onMouseOut={(e) => e.currentTarget.style.borderColor = '#e9ecef'}
-                      >
-                          <div style={{ fontWeight: 'bold', marginBottom: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {file.filename}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#868e96' }}>
-                              {new Date(file.upload_date).toLocaleString('ja-JP')}
-                          </div>
-                      </li>
-                  ))}
-              </ul>
-          </aside>
-
+          
           <main className="main-content" style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
             {data.length > 0 ? (
               <div className="tab-content">
@@ -213,13 +199,41 @@ function Dashboard() {
                 )}
               </div>
             ) : (
-              <WelcomeScreen 
-                onDataParsed={handleDataParsed} 
-                onError={handleError} 
-              />
+              <div className="empty-state" style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                height: '100%',
+                color: '#868e96'
+              }}>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📂</div>
+                <h2>データが読み込まれていません</h2>
+                <p>右上の「ファイルを開く」ボタンから履歴を選択するか、<br/>以下から新しいファイルをアップロードしてください。</p>
+                <div style={{ marginTop: '2rem' }}>
+                    <CsvUploader
+                        onDataParsed={handleDataParsed}
+                        onError={handleError}
+                        onUploadComplete={fetchFileList}
+                    >
+                        ファイルを選択またはドロップ
+                    </CsvUploader>
+                </div>
+              </div>
             )}
           </main>
       </div>
+
+      <HistoryPopup
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        fileList={fileList}
+        onSelectFile={handleLoadRemoteFile}
+        onDataParsed={handleDataParsed}
+        onError={handleError}
+        onUploadComplete={fetchFileList}
+        onDeleteFile={handleDeleteFile}
+      />
     </div>
   );
 }

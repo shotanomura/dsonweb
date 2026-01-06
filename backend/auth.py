@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from database import SessionLocal
-import models, schemas
+import models, schemas, crud
 
 # Secret key to sign JWT (should be in env var in production)
 SECRET_KEY = "your-secret-key-keep-it-secret"
@@ -27,7 +27,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.utcnow() + timedelta(minutes=1440)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -38,18 +38,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
-import os
-import boto3
-from botocore.exceptions import ClientError
-# ... other imports ...
-
-# --- 環境判定 ---
-IS_LAMBDA = os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None
-
-if IS_LAMBDA:
-    dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-1')
-    user_table = dynamodb.Table('Users')
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -66,14 +54,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     except JWTError:
         raise credentials_exception
     
-    if IS_LAMBDA:
-        try:
-            response = user_table.get_item(Key={'username': token_data.username})
-            user = response.get('Item')
-        except ClientError:
-            raise credentials_exception
-    else:
-        user = db.query(models.User).filter(models.User.username == token_data.username).first()
+    user = crud.get_user_by_username(token_data.username, db)
         
     if user is None:
         raise credentials_exception

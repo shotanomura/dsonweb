@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import './Header.css';
 
 function Header({
@@ -8,8 +10,19 @@ function Header({
   activeTab,
   onDataParsed,
   onError,
-  onTabChange
+  onTabChange,
+  onUploadComplete,
+  onToggleHistory
 }) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <header className="app-header">
       <div className="header-main">
@@ -53,85 +66,53 @@ function Header({
         </div>
         
         <div className="header-right">
-          <div className="file-section">
-            {filename ? (
-              <div className="file-info">
-                <span className="filename-text">
-                  読み込み済み: {filename}
-                </span>
-                <label className="file-change-button">
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        // CsvUploaderの処理をここで実行
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          try {
-                            const csv = event.target.result;
-                            const lines = csv.split('\n').filter(line => line.trim());
-                            if (lines.length < 2) throw new Error('CSVファイルにデータがありません。');
-                            
-                            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-                            const data = lines.slice(1).map(line => {
-                              const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-                              const row = {};
-                              headers.forEach((header, index) => {
-                                row[header] = values[index] || '';
-                              });
-                              return row;
-                            });
-                            
-                            onDataParsed(data, file.name);
-                          } catch (error) {
-                            onError(`CSVファイルの解析に失敗しました: ${error.message}`);
-                          }
-                        };
-                        reader.readAsText(file);
-                      }
-                    }}
-                  />
-                  変更
-                </label>
+          <button 
+            className="history-button"
+            onClick={onToggleHistory}
+            title={filename || "ファイルを開く"}
+            style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#f8f9fa',
+                border: '1px solid #dee2e6',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 500,
+                color: '#495057',
+                maxWidth: '200px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                textAlign: 'center',
+                marginRight: '1rem'
+            }}
+          >
+            {filename || "ファイルを開く"}
+          </button>
+
+          <div className="hamburger-menu-container">
+            <button 
+              className={`hamburger-button ${isMenuOpen ? 'open' : ''}`}
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Menu"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+            
+            {isMenuOpen && (
+              <div className="menu-dropdown">
+                <button onClick={handleLogout} className="menu-item logout">
+                  ログアウト
+                </button>
               </div>
-            ) : (
-              <label className="file-uploader-label">
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        try {
-                          const csv = event.target.result;
-                          const lines = csv.split('\n').filter(line => line.trim());
-                          if (lines.length < 2) throw new Error('CSVファイルにデータがありません。');
-                          
-                          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-                          const data = lines.slice(1).map(line => {
-                            const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-                            const row = {};
-                            headers.forEach((header, index) => {
-                              row[header] = values[index] || '';
-                            });
-                            return row;
-                          });
-                          
-                          onDataParsed(data, file.name);
-                        } catch (error) {
-                          onError(`CSVファイルの解析に失敗しました: ${error.message}`);
-                        }
-                      };
-                      reader.readAsText(file);
-                    }
-                  }}
-                />
-                CSVファイルを選択
-              </label>
+            )}
+            
+            {isMenuOpen && (
+              <div 
+                className="menu-backdrop" 
+                onClick={() => setIsMenuOpen(false)} 
+              />
             )}
           </div>
         </div>
