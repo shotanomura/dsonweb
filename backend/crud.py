@@ -23,7 +23,10 @@ def get_user_by_username(username: str, db: Session):
     if IS_LAMBDA:
         try:
             response = user_table.get_item(Key={'username': username})
-            return response.get('Item')
+            item = response.get('Item')
+            if item:
+                return schemas.UserInDB(**item)
+            return None
         except ClientError as e:
             print(e.response['Error']['Message'])
             return None
@@ -32,13 +35,14 @@ def get_user_by_username(username: str, db: Session):
 
 def get_user_by_email(email: str, db: Session):
     if IS_LAMBDA:
-        # DynamoDBでemailはGSIが必要だが、今回はScanで代用（ユーザー数が少ない想定）
         try:
             response = user_table.scan(
                 FilterExpression=Key('email').eq(email)
             )
             items = response.get('Items', [])
-            return items[0] if items else None
+            if items:
+                return schemas.UserInDB(**items[0])
+            return None
         except ClientError as e:
             print(e.response['Error']['Message'])
             return None
@@ -54,7 +58,7 @@ def create_user(user: schemas.UserCreate, hashed_password: str, db: Session):
         }
         try:
             user_table.put_item(Item=new_user_item)
-            return new_user_item
+            return schemas.UserInDB(**new_user_item)
         except ClientError as e:
             raise Exception(str(e))
     else:
@@ -79,7 +83,7 @@ def create_upload_metadata(item: dict, db: Session):
     if IS_LAMBDA:
         try:
             upload_table.put_item(Item=item)
-            return item
+            return schemas.Upload(**item)
         except ClientError as e:
             raise Exception(str(e))
     else:
@@ -106,29 +110,16 @@ def get_uploads_by_username(username: str, db: Session):
             response = upload_table.query(
                 KeyConditionExpression=Key('username').eq(username)
             )
-            return response.get('Items', [])
+            items = response.get('Items', [])
+            return [schemas.Upload(**item) for item in items]
         except ClientError as e:
             raise Exception(str(e))
     else:
-        uploads = db.query(models.Upload).filter(models.Upload.username == username).all()
-        # 辞書形式に変換して返す（フロントエンドとの互換性のため）
-        return [
-            {
-                "username": u.username,
-                "upload_id": u.upload_id,
-                "filename": u.filename,
-                "s3_key": u.s3_key,
-                "upload_date": u.upload_date,
-                "row_count": u.row_count
-            }
-            for u in uploads
-        ]
+        return db.query(models.Upload).filter(models.Upload.username == username).all()
 
 def count_user_uploads(username: str, db: Session) -> int:
     if IS_LAMBDA:
         try:
-            # DynamoDBでのカウントはScanが必要で高コストだが、上限が低い(5)ので許容、
-            # またはQueryでSelect='COUNT'を使う
             response = upload_table.query(
                 KeyConditionExpression=Key('username').eq(username),
                 Select='COUNT'
@@ -136,16 +127,18 @@ def count_user_uploads(username: str, db: Session) -> int:
             return response['Count']
         except ClientError as e:
             print(f"DynamoDB Count Error: {e}")
-            return 0 # エラー時は0にしてアップロードを許可してしまうか、エラーにするか。安全側に倒すなら無限許可だが...
+            return 0
     else:
         return db.query(models.Upload).filter(models.Upload.username == username).count()
 
 def get_upload_by_id(username: str, upload_id: str, db: Session):
     if IS_LAMBDA:
         try:
-            # DynamoDBは複合キー(username, upload_id)が必要
              response = upload_table.get_item(Key={'username': username, 'upload_id': upload_id})
-             return response.get('Item')
+             item = response.get('Item')
+             if item:
+                 return schemas.Upload(**item)
+             return None
         except ClientError as e:
             raise Exception(str(e))
     else:

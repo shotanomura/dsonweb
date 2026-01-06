@@ -67,16 +67,10 @@ async def delete_file(
         if not upload_item:
             raise HTTPException(status_code=404, detail="File not found")
 
-        # DynamoDBの場合は辞書、SQLAlchemyの場合はオブジェクト
-        if isinstance(upload_item, dict):
-            s3_key = upload_item.get('s3_key')
-        else:
-            s3_key = upload_item.s3_key
-
         # 2. ストレージから削除
         try:
             storage = get_storage()
-            storage.delete(s3_key)
+            storage.delete(upload_item.s3_key)
         except Exception as e:
             # ストレージになくてもDBからは消す？ 一応ログだけ出して続行
             pass
@@ -229,13 +223,10 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     # ユーザー取得
     user = crud.get_user_by_username(form_data.username, db)
     
-    # DynamoDBは辞書、SQLAlchemyはオブジェクトなので、アクセス方法を柔軟にする
-    if isinstance(user, dict):
-        db_password = user.get("hashed_password")
-        username = user.get("username")
-    else:
-        db_password = getattr(user, "hashed_password", None)
-        username = getattr(user, "username", None)
+    # DynamoDBは辞書、SQLAlchemyはオブジェクトなので、アクセス方法を柔軟にする。
+    # 現在はcrud.pyでオブジェクトに統一されているため、属性アクセスでOK
+    db_password = getattr(user, "hashed_password", None)
+    username = getattr(user, "username", None)
 
     if not user or not auth.verify_password(form_data.password, db_password):
         raise HTTPException(
