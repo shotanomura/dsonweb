@@ -17,6 +17,8 @@ from mangum import Mangum  # Lambda用のアダプター
 import os
 import boto3
 from botocore.exceptions import ClientError
+from datetime import datetime
+from boto3.dynamodb.conditions import Key
 
 # --- 環境判定 ---
 IS_LAMBDA = os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None
@@ -26,6 +28,7 @@ if IS_LAMBDA:
     # Lambda上ではboto3を使用
     dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-1')
     user_table = dynamodb.Table('Users')
+    upload_table = dynamodb.Table('Uploads')
 else:
     # ローカル環境ではSQLAlchemyのテーブル作成を実行
     # Lambdaでは書き込み不可なため実行しないようにガード
@@ -51,10 +54,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- S3 Config ---
+S3_BUCKET_NAME = "dsow-user-uploads" 
+
+# --- 新しいエンドポイント：ファイル一覧の取得 ---
+@app.get("/files")
+async def get_files(current_user: models.User = Depends(auth.get_current_user)):
+    if not IS_LAMBDA:
+        return [] # ローカル用（必要ならSQLiteで実装）
+
+    try:
+        # usernameが一致する項目をすべて取得
+        response = upload_table.query(
+            KeyConditionExpression=Key('username').eq(current_user.username)
+        )
+        return response.get('Items', [])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/upload")
-async def upload_csv(file: UploadFile = File(...)):
+async def upload_csv(
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(auth.get_current_user)
+):
     """
-    CSVファイルをアップロードして、データの基本情報を返します。
+    CSVファイルをアップロードして、S3に保存し、データの基本情報を返します。
     """
     try:
         # ファイルの種類をチェック
@@ -66,6 +90,43 @@ async def upload_csv(file: UploadFile = File(...)):
         
         # CSVデータをDataFrameに変換
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+        
+        s3_key = None
+        s3_message = "S3への保存はスキップされました（ローカル環境または設定なし）"
+        upload_id = None
+
+        # S3へのアップロード (Lambda環境かつバケット名設定時)
+        if IS_LAMBDA and S3_BUCKET_NAME:
+            try:
+                # ユーザー別のパスにするには認証が必要ですが、今回は簡易的に日時で分けます
+                # 本番では current_user.username を使うなどの対応が推奨されます
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                # users/{username}/uploads/... の形式に変更
+                s3_key = f"users/{current_user.username}/uploads/{timestamp}_{file.filename}"
+                
+                s3_client = boto3.client('s3')
+                s3_client.put_object(
+                    Bucket=S3_BUCKET_NAME,
+                    Key=s3_key,
+                    Body=contents
+                )
+                s3_message = f"S3に保存されました:Path={s3_key}"
+                
+                # DynamoDBへの履歴保存を追加
+                upload_id = datetime.now().strftime("%Y%m%d%H%M%S%f")
+                upload_item = {
+                    "username": current_user.username,
+                    "upload_id": upload_id,
+                    "filename": file.filename,
+                    "s3_key": s3_key,
+                    "upload_date": datetime.now().isoformat(),
+                    "row_count": int(len(df)) # Decimal対策でintにキャスト推奨
+                }
+                upload_table.put_item(Item=upload_item)
+                
+            except Exception as e:
+                s3_message = f"S3保存エラー: {str(e)}"
+
         
         # MLTrainerにデータを読み込み
         # load_message = ml_trainer.load_data(df)
@@ -83,9 +144,11 @@ async def upload_csv(file: UploadFile = File(...)):
         
         return {
             "success": True,
-            "message": f"ファイル '{file.filename}' が正常にアップロードされました",
+            "message": f"ファイル '{file.filename}' が正常にアップロードされました。{s3_message}",
             "data_info": data_info,
-            "ml_message": load_message
+            "ml_message": load_message,
+            "s3_key": s3_key,
+            "upload_id": upload_id
         }
         
     except Exception as e:
@@ -233,6 +296,30 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 @app.get("/users/me", response_model=schemas.User)
 async def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
     return current_user
+
+# --- ファイルダウンロード用エンドポイント ---
+@app.get("/download")
+async def download_file(s3_key: str, current_user: models.User = Depends(auth.get_current_user)):
+    """
+    S3からファイルをダウンロードして内容を返します。
+    ここではブラウザで直接ダウンロードさせるのではなく、
+    フロントエンドでパースするためにテキスト(CSV)として返却する想定です。
+    """
+    if not IS_LAMBDA:
+        return {"error": "Local environment does not support S3 download yet"}
+    
+    # セキュリティチェック: s3_key がそのユーザーのものであるか確認すべきですが
+    # 今回は簡易的にパスにユーザー名が含まれているかでチェックします
+    if f"users/{current_user.username}/" not in s3_key:
+         raise HTTPException(status_code=403, detail="Access denied")
+
+    try:
+        s3_client = boto3.client('s3')
+        response = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=s3_key)
+        content = response['Body'].read().decode('utf-8')
+        return {"content": content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # @app.post("/predict")
 # async def predict(request: PredictionRequest):
