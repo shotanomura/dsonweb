@@ -31,11 +31,10 @@ if not IS_LAMBDA:
 app = FastAPI()
 
 # 2. CORSミドルウェアの設定
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+
 origins = [
-    "https://elaborate-trifle-638f92.netlify.app", 
-    "http://localhost:5173", # ローカル開発用
-    "http://localhost:3000", # 追加のローカル開発用
-    "*" # 開発時のため一時的に全許可
+    FRONTEND_URL, 
 ]
 
 app.add_middleware(
