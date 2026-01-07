@@ -268,23 +268,100 @@ s3_client = boto3.client(
 )
 
 @app.get("/generate-upload-url")
-def generate_upload_url(filename: str, file_type: str):
-    # 保存先のパスを指定
-    object_name = f"uploads/{filename}"
+def generate_upload_url(
+    filename: str, 
+    file_type: str,
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # 保存先のパスを指定 (ユーザーごとのフォルダ)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    object_name = f"users/{current_user.username}/uploads/{timestamp}_{filename}"
     bucket_name = "dsow-user-uploads"
 
     # 署名付きURLを生成（有効期限は5分）
-    presigned_url = s3_client.generate_presigned_url(
-        'put_object',
-        Params={
-            'Bucket': bucket_name,
-            'Key': object_name,
-            'ContentType': file_type
-        },
-        ExpiresIn=300 # 300秒
-    )
-    
-    return {"url": presigned_url, "file_path": object_name}
+    try:
+        presigned_url = s3_client.generate_presigned_url(
+            'put_object',
+            Params={
+                'Bucket': bucket_name,
+                'Key': object_name,
+                'ContentType': file_type
+            },
+            ExpiresIn=300 # 300秒
+        )
+        return {"url": presigned_url, "s3_key": object_name}
+    except Exception as e:
+        print(f"Error generating presigned URL: {e}")
+        raise HTTPException(status_code=500, detail="Could not generate upload URL")
+
+@app.post("/upload/complete")
+async def upload_complete(
+    completion: schemas.UploadCompletion,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(auth.get_db)
+):
+    try:
+        s3_key = completion.s3_key
+        
+        # セキュリティチェック: ユーザーごとのパスになっているか
+        if f"users/{current_user.username}/" not in s3_key:
+             raise HTTPException(status_code=403, detail="Invalid S3 key for this user")
+
+        storage = get_storage()
+        # S3からファイルを読み込む (Localモードの場合はパスから読み込む)
+        try:
+            content_bytes = storage.load(s3_key)
+        except Exception as e:
+             raise HTTPException(status_code=404, detail=f"File not found in storage: {str(e)}")
+
+        # CSVデータをDataFrameに変換
+        try:
+            df = pd.read_csv(io.StringIO(content_bytes.decode('utf-8')))
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to parse CSV: {str(e)}")
+
+        # メタデータを保存
+        upload_id = datetime.now().strftime("%Y%m%d%H%M%S%f")
+        upload_item = {
+            "username": current_user.username,
+            "upload_id": upload_id,
+            "filename": completion.filename,
+            "s3_key": s3_key,
+            "upload_date": datetime.now().isoformat(),
+            "row_count": int(len(df))
+        }
+        crud.create_upload_metadata(upload_item, db)
+        
+        load_message = "Machine Learning feature is currently disabled."
+        
+        # データの基本情報を取得
+        sample_df = df.head(5).where(pd.notnull(df), None)
+        
+        data_info = {
+            "filename": completion.filename,
+            "shape": df.shape,
+            "columns": df.columns.tolist(),
+            "dtypes": df.dtypes.astype(str).to_dict(),
+            "missing_values": df.isnull().sum().to_dict(),
+            "sample_data": sample_df.to_dict(orient='records')
+        }
+        
+        return {
+            "success": True,
+            "message": f"ファイル '{completion.filename}' が正常に処理されました。",
+            "data_info": data_info,
+            "ml_message": load_message,
+            "s3_key": s3_key,
+            "upload_id": upload_id
+        }
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Error in upload_complete: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 # @app.post("/predict")
 # async def predict(request: PredictionRequest):
