@@ -21,34 +21,97 @@ function CsvUploader({ onDataParsed, onError, onUploadComplete, id, className, c
     
     setUploading(true);
 
-    // 1. バックエンドへアップロード (保存用) - 先に実行して完了を待つ
+    // 1. バックエンドへアップロード (保存用)
     if (token) {
-        const formData = new FormData();
-        formData.append('file', file);
-
         try {
             const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-            const res = await fetch(`${API_BASE_URL}/upload`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
-            
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.detail || errData.error || `Upload failed with status ${res.status}`);
+            let uploadSuccess = false;
+            let responseData = null;
+
+            // A. Direct S3 Upload (Try this first)
+            try {
+                // 1. Get Presigned URL
+                const presignRes = await fetch(`${API_BASE_URL}/generate-upload-url?filename=${encodeURIComponent(file.name)}&file_type=${encodeURIComponent(file.type)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (presignRes.ok) {
+                    const { url, s3_key } = await presignRes.json();
+                    
+                    // 2. Upload to S3
+                    const uploadRes = await fetch(url, {
+                        method: 'PUT',
+                        body: file,
+                        headers: {
+                            'Content-Type': file.type
+                        }
+                    });
+
+                    if (uploadRes.ok) {
+                        // 3. Notify Backend
+                        const completeRes = await fetch(`${API_BASE_URL}/upload/complete`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ s3_key, filename: file.name })
+                        });
+
+                        if (completeRes.ok) {
+                            responseData = await completeRes.json();
+                            uploadSuccess = true;
+                            console.log("Direct S3 Upload Successful");
+                        } else {
+                             const err = await completeRes.json();
+                             throw new Error(err.detail || "Completion failed");
+                        }
+                    } else {
+                        throw new Error("S3 PUT failed");
+                    }
+                } else {
+                    throw new Error("Failed to get presigned URL"); // Trigger fallback
+                }
+            } catch (s3Error) {
+                console.warn("Direct S3 upload failed, falling back to proxy upload:", s3Error);
+                // Fallback will proceed below if uploadSuccess is false
+            }
+
+            // B. Fallback to Proxy Upload (Original Method)
+            if (!uploadSuccess) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const res = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || errData.error || `Upload failed with status ${res.status}`);
+                }
+                responseData = await res.json();
             }
 
             // アップロード成功後に一覧更新コールバックを呼ぶ
             if (onUploadComplete) {
                 onUploadComplete();
             }
+
         } catch (e) {
             console.error("Upload failed", e);
             onError(`アップロードエラー: ${e.message}`);
+            setUploading(false); // エラー時はここでフラグを戻す（パース処理に行かない場合）
+            return; // パース処理をスキップ
         }
+    } else {
+        onError("ログインが必要です");
+        setUploading(false);
+        return;
     }
 
     // 2. ローカルパース (即時表示用) - アップロード後に実行

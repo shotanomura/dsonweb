@@ -38,3 +38,7 @@ class Upload(BaseModel):
 
     class Config:
         from_attributes = True
+
+class UploadCompletion(BaseModel):
+    s3_key: str
+    filename: str

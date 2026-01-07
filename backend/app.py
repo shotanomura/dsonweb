@@ -16,6 +16,9 @@ from sqlalchemy.orm import Session
 from database import engine
 from mangum import Mangum  # Lambda用のアダプター
 
+import boto3
+from botocore.config import Config
+
 import os
 from datetime import datetime
 
@@ -257,6 +260,31 @@ async def download_file(s3_key: str, current_user: models.User = Depends(auth.ge
         return {"content": content_bytes.decode('utf-8')}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+s3_client = boto3.client(
+    's3',
+    region_name='ap-northeast-1',
+    config=Config(signature_version='s3v4') # 署名V4を強制
+)
+
+@app.get("/generate-upload-url")
+def generate_upload_url(filename: str, file_type: str):
+    # 保存先のパスを指定
+    object_name = f"uploads/{filename}"
+    bucket_name = "dsow-user-uploads"
+
+    # 署名付きURLを生成（有効期限は5分）
+    presigned_url = s3_client.generate_presigned_url(
+        'put_object',
+        Params={
+            'Bucket': bucket_name,
+            'Key': object_name,
+            'ContentType': file_type
+        },
+        ExpiresIn=300 # 300秒
+    )
+    
+    return {"url": presigned_url, "file_path": object_name}
 
 # @app.post("/predict")
 # async def predict(request: PredictionRequest):
