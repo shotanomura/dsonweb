@@ -122,7 +122,12 @@ function CsvUploader({ onDataParsed, onError, onUploadComplete, id, className, c
       complete: (results) => {
         setUploading(false);
         if (results.data.length > 0) {
-          onDataParsed(results.data, file.name);
+          // Pass s3_key and upload_id if available from responseData
+          const metadata = responseData ? {
+              s3_key: responseData.s3_key,
+              upload_id: responseData.upload_id
+          } : {};
+          onDataParsed(results.data, file.name, metadata);
         } else {
           onError('CSVファイルが空か、内容を読み取れませんでした。');
         }

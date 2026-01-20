@@ -3,6 +3,10 @@ name: AWS CDK Deploy
 on:
   push:
     branches: ["main"] # master ブランチに push されたら実行
+    paths:
+      - 'backend/**'    # backendフォルダ内の変更
+      - 'infra/**'      # infraフォルダ内の変更
+      - '.github/workflows/cdk-deploy.yml' # ワークフロー自体の変更
   workflow_dispatch: # 手動で実行したい場合もボタンが出るように設定
 
 jobs:
@@ -42,7 +46,6 @@ jobs:
           pip install -r requirements.txt
 
       # 5. デプロイ実行
-      # --require-approval never は「y/n」の確認をスキップするために必須です
       - name: CDK Deploy
         run: |
           cd infra

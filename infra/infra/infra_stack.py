@@ -32,7 +32,9 @@ class InfraStack(Stack):
             timeout=Duration.seconds(30),
             environment={
                 "IS_LAMBDA": "True",
-                "FRONTEND_URL": "https://main.d2j93n44yuyr7t.amplifyapp.com"
+                "FRONTEND_URL": "https://main.d2j93n44yuyr7t.amplifyapp.com",
+                # IMPORTANT: Set this in AWS Console or use AWS Secrets Manager
+                # "JWT_SECRET_KEY": "your-production-secret-key-here"
             }
         )
 

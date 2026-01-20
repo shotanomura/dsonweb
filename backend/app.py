@@ -9,6 +9,7 @@ import json
 import io
 # from ml_trainer import ml_trainer
 import models, schemas, auth, crud
+from analysis import TimeSeriesAnalyzer
 from storage import get_storage
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -202,6 +203,11 @@ class PredictionRequest(BaseModel):
 class BatchPredictionRequest(BaseModel):
     data: list
 
+class TimeSeriesRequest(BaseModel):
+    s3_key: str
+    target_column: str
+    lags: int = 40
+
 @app.post("/register", response_model=schemas.User)
 def register_user(user: schemas.UserCreate, db: Session = Depends(auth.get_db)):
     # 既存ユーザー確認
@@ -393,7 +399,48 @@ async def upload_complete(
 #             "error": f"バッチ予測中にエラーが発生しました: {str(e)}"
 #         }
 
+@app.post("/analyze/time_series")
+async def analyze_time_series(
+    request: TimeSeriesRequest,
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    指定されたファイルの指定された列に対して時系列分析（自己相関など）を実行します。
+    """
+    try:
+        # セキュリティチェック
+        if f"users/{current_user.username}/" not in request.s3_key:
+             raise HTTPException(status_code=403, detail="Access denied")
 
+        storage = get_storage()
+        try:
+            content_bytes = storage.load(request.s3_key)
+        except Exception as e:
+             raise HTTPException(status_code=404, detail=f"File not found: {str(e)}")
+
+        try:
+            df = pd.read_csv(io.StringIO(content_bytes.decode('utf-8')))
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to parse CSV: {str(e)}")
+
+        analyzer = TimeSeriesAnalyzer()
+        result = analyzer.analyze(df, request.target_column, request.lags)
+        
+        if "error" in result:
+             raise HTTPException(status_code=400, detail=result["error"])
+
+        return {
+            "success": True,
+            "result": result
+        }
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Error in time series analysis: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 @app.get("/")
 def read_root():
     return {"message": "LightGBM推論APIへようこそ"}

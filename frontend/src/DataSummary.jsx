@@ -1,18 +1,45 @@
 import React, { useState, useMemo } from 'react';
 import CustomSelect from './components/CustomSelect';
-import './App.css'; // Ensure CSS is imported for tab styles
+import './App.css'; 
+import { useAuth } from './context/AuthContext';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 
-function DataSummary({ columns, data }) {
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+function DataSummary({ columns, data, s3Key }) {
+  const { token } = useAuth();
   const [selectedColumn, setSelectedColumn] = useState('');
-  const [correlationType, setCorrelationType] = useState('correlation'); // 'correlation' or 'partial'
+  const [correlationType, setCorrelationType] = useState('correlation'); 
   const [controlColumns, setControlColumns] = useState([]);
-  const [activeTab, setActiveTab] = useState('numeric'); // 'numeric', 'categorical', 'correlation'
+  const [activeTab, setActiveTab] = useState('numeric'); 
+
+  // Time Series States
+  const [tsTargetColumn, setTsTargetColumn] = useState('');
+  const [tsResult, setTsResult] = useState(null);
+  const [tsLoading, setTsLoading] = useState(false);
+  const [tsError, setTsError] = useState('');
 
   if (!data || data.length === 0) {
     return <div>データがありません</div>;
   }
 
-  // 数値列を特定する関数
+  // 数値列を特定
   const getNumericColumns = () => {
     return columns.filter(column => {
       return data.every(row => {
@@ -25,9 +52,78 @@ function DataSummary({ columns, data }) {
   const numericColumns = getNumericColumns();
   const categoricalColumns = columns.filter(col => !numericColumns.includes(col));
 
-  // 相関係数を計算する関数
+  // --- Time Series Analysis Handler ---
+  const handleTimeSeriesAnalyze = async () => {
+      if (!tsTargetColumn) return;
+      if (!s3Key) {
+          setTsError("クラウドに保存されたファイルでのみ利用可能です。");
+          return;
+      }
+      
+      setTsLoading(true);
+      setTsError('');
+      setTsResult(null);
+
+      try {
+          const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+          const res = await fetch(`${API_BASE_URL}/analyze/time_series`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                  s3_key: s3Key,
+                  target_column: tsTargetColumn,
+                  lags: 40
+              })
+          });
+
+          if (!res.ok) {
+              const err = await res.json();
+              throw new Error(err.detail || "Analysis failed");
+          }
+
+          const responseData = await res.json();
+          if (responseData.success) {
+              setTsResult(responseData.result);
+          } else {
+              throw new Error(responseData.error || "Unknown error");
+          }
+      } catch (e) {
+          console.error("Time Series Analysis Error", e);
+          setTsError(e.message);
+      } finally {
+          setTsLoading(false);
+      }
+  };
+
+  // Chart Data Preparation
+  const acfChartData = useMemo(() => {
+      if (!tsResult || !tsResult.acf) return null;
+      return {
+          labels: tsResult.lags,
+          datasets: [
+              {
+                  label: '自己相関係数 (ACF)',
+                  data: tsResult.acf,
+                  backgroundColor: 'rgba(53, 162, 235, 0.5)',
+                  borderColor: 'rgba(53, 162, 235, 1)',
+                  borderWidth: 1,
+              },
+              {
+                  label: '偏自己相関係数 (PACF)',
+                  data: tsResult.pacf,
+                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  borderWidth: 1,
+              }
+          ]
+      };
+  }, [tsResult]);
+
+  // 相関係数ロジック (既存)
   const calculateCorrelation = (col1, col2) => {
-    // 両方の列が有効な数値を持つ行のみを抽出
     const validRows = data.filter(row => {
       const val1 = row[col1];
       const val2 = row[col2];
@@ -60,13 +156,10 @@ function DataSummary({ columns, data }) {
     return denominator === 0 ? 0 : numerator / denominator;
   };
 
-  // 偏相関係数を計算する関数
   const calculatePartialCorrelation = (col1, col2, controlCols) => {
     if (controlCols.length === 0) {
       return calculateCorrelation(col1, col2);
     }
-
-    // 有効な行のみを抽出
     const validRows = data.filter(row => {
       const allCols = [col1, col2, ...controlCols];
       return allCols.every(col => {
@@ -76,20 +169,13 @@ function DataSummary({ columns, data }) {
     });
 
     if (validRows.length < controlCols.length + 3) return null;
-
-    // データ行列を作成
     const matrix = validRows.map(row => [col1, col2, ...controlCols].map(col => Number(row[col])));
-
-    // 相関行列を計算
     const corrMatrix = calculateCorrelationMatrix(matrix);
-
     if (!corrMatrix || corrMatrix.length < 2) return null;
 
-    // 偏相関係数を計算（逆行列を使用）
     try {
       const invMatrix = invertMatrix(corrMatrix);
       if (!invMatrix) return null;
-
       const r12_partial = -invMatrix[0][1] / Math.sqrt(invMatrix[0][0] * invMatrix[1][1]);
       return isNaN(r12_partial) ? null : r12_partial;
     } catch (error) {
@@ -98,20 +184,14 @@ function DataSummary({ columns, data }) {
     }
   };
 
-  // 相関行列を計算
   const calculateCorrelationMatrix = (matrix) => {
     const n = matrix.length;
     const p = matrix[0].length;
-
-    // 平均を計算
     const means = [];
     for (let j = 0; j < p; j++) {
       means[j] = matrix.reduce((sum, row) => sum + row[j], 0) / n;
     }
-
-    // 相関行列を計算
     const corrMatrix = Array(p).fill().map(() => Array(p).fill(0));
-
     for (let i = 0; i < p; i++) {
       for (let j = 0; j < p; j++) {
         if (i === j) {
@@ -120,7 +200,6 @@ function DataSummary({ columns, data }) {
           let numerator = 0;
           let denom1 = 0;
           let denom2 = 0;
-
           for (let k = 0; k < n; k++) {
             const diff1 = matrix[k][i] - means[i];
             const diff2 = matrix[k][j] - means[j];
@@ -128,43 +207,30 @@ function DataSummary({ columns, data }) {
             denom1 += diff1 * diff1;
             denom2 += diff2 * diff2;
           }
-
           const denominator = Math.sqrt(denom1 * denom2);
           corrMatrix[i][j] = denominator === 0 ? 0 : numerator / denominator;
         }
       }
     }
-
     return corrMatrix;
   };
 
-  // 行列の逆行列を計算（ガウス・ジョーダン法）
   const invertMatrix = (matrix) => {
     const n = matrix.length;
     const augmented = matrix.map((row, i) => [...row, ...Array(n).fill(0).map((_, j) => i === j ? 1 : 0)]);
-
-    // ガウス・ジョーダン法
     for (let i = 0; i < n; i++) {
-      // ピボット選択
       let maxRow = i;
       for (let k = i + 1; k < n; k++) {
         if (Math.abs(augmented[k][i]) > Math.abs(augmented[maxRow][i])) {
           maxRow = k;
         }
       }
-
       [augmented[i], augmented[maxRow]] = [augmented[maxRow], augmented[i]];
-
-      // 対角要素が0の場合は計算不可
       if (Math.abs(augmented[i][i]) < 1e-10) return null;
-
-      // 行を正規化
       const pivot = augmented[i][i];
       for (let j = 0; j < 2 * n; j++) {
         augmented[i][j] /= pivot;
       }
-
-      // 他の行を消去
       for (let k = 0; k < n; k++) {
         if (k !== i) {
           const factor = augmented[k][i];
@@ -174,15 +240,11 @@ function DataSummary({ columns, data }) {
         }
       }
     }
-
-    // 逆行列部分を抽出
     return augmented.map(row => row.slice(n));
   };
 
-  // 選択した列との相関係数または偏相関係数を計算
   const correlationData = useMemo(() => {
     if (!selectedColumn || !numericColumns.includes(selectedColumn)) return [];
-
     try {
       return numericColumns
         .filter(col => col !== selectedColumn && !controlColumns.includes(col))
@@ -203,7 +265,6 @@ function DataSummary({ columns, data }) {
     }
   }, [selectedColumn, data, numericColumns, correlationType, controlColumns]);
 
-  // 統計を計算する関数
   const calculateStats = (column) => {
     const values = data
       .map(row => Number(row[column]))
@@ -232,8 +293,6 @@ function DataSummary({ columns, data }) {
 
   return (
     <div className="data-summary">
-
-
       <div className="sub-tabs-container">
         {numericColumns.length > 0 && (
           <button 
@@ -256,6 +315,14 @@ function DataSummary({ columns, data }) {
           >
             相関係数分析
           </button>
+        )}
+        {numericColumns.length > 0 && (
+            <button 
+                className={`sub-tab-button ${activeTab === 'timeseries' ? 'active' : ''}`}
+                onClick={() => setActiveTab('timeseries')}
+            >
+                時系列分析
+            </button>
         )}
       </div>
 
@@ -432,6 +499,78 @@ function DataSummary({ columns, data }) {
               </div>
             </div>
           </div>
+        )}
+        
+        {activeTab === 'timeseries' && (
+            <div className="timeseries-analysis">
+                <h3>時系列分析</h3>
+                <div className="correlation-layout">
+                    <div className="correlation-controls-left">
+                        <CustomSelect
+                            label="分析対象列:"
+                            id="timeseries-column"
+                            value={tsTargetColumn}
+                            onChange={setTsTargetColumn}
+                            options={[
+                                { value: '', label: '選択してください' },
+                                ...numericColumns.map(column => ({ value: column, label: column }))
+                            ]}
+                            placeholder="分析対象列を選択"
+                        />
+                        <button 
+                            className="primary-button" 
+                            onClick={handleTimeSeriesAnalyze} 
+                            disabled={!tsTargetColumn || tsLoading || !s3Key}
+                            style={{marginTop: '1rem', width: '100%'}}
+                        >
+                            {tsLoading ? '分析中...' : '分析実行'}
+                        </button>
+                        {!s3Key && <p className="error-message" style={{marginTop: '0.5rem', fontSize: '0.8rem'}}>※この機能はクラウド保存済みファイルでのみ利用可能です。</p>}
+                        {tsError && <p className="error-message" style={{marginTop: '0.5rem'}}>{tsError}</p>}
+                    </div>
+                    <div className="correlation-results-right">
+                        {tsResult ? (
+                            <div className="timeseries-results">
+                                <h4>自己相関係数 (ACF)</h4>
+                                {acfChartData && (
+                                    <div style={{height: '300px', width: '100%'}}>
+                                        <Bar 
+                                            options={{
+                                                responsive: true,
+                                                maintainAspectRatio: false,
+                                                plugins: {
+                                                    legend: { position: 'top' },
+                                                    title: { display: true, text: 'Autocorrelation Function' },
+                                                },
+                                                scales: {
+                                                    y: {
+                                                        min: -1,
+                                                        max: 1,
+                                                    }
+                                                }
+                                            }} 
+                                            data={acfChartData} 
+                                        />
+                                    </div>
+                                )}
+                                <div style={{marginTop: '1rem'}}>
+                                    <h5>基本統計量</h5>
+                                    <ul>
+                                        <li>平均: {tsResult.stats.mean.toFixed(4)}</li>
+                                        <li>標準偏差: {tsResult.stats.std.toFixed(4)}</li>
+                                        <li>最大: {tsResult.stats.max}</li>
+                                        <li>最小: {tsResult.stats.min}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="correlation-placeholder">
+                                <p>分析対象列を選択して実行してください。</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
         )}
       </div>
     </div>

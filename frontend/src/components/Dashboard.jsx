@@ -13,6 +13,7 @@ import HistoryPopup from './HistoryPopup';
 function Dashboard() {
   const { token } = useAuth();
   const [filename, setFilename] = useState('');
+  const [currentS3Key, setCurrentS3Key] = useState(null);
   const [columns, setColumns] = useState([]);
   const [data, setData] = useState([]);
   const [error, setError] = useState('');
@@ -74,6 +75,7 @@ function Dashboard() {
                 setColumns(Object.keys(results.data[0]));
                 setData(results.data);
                 setFilename(originalFilename);
+                setCurrentS3Key(s3Key);
                 setActiveTab('data'); // データタブに切り替え
               } else {
                 setError('CSVファイルが空か、内容を読み取れませんでした。');
@@ -108,11 +110,16 @@ function Dashboard() {
     }
   });
 
-  const handleDataParsed = (parsedData, filename) => {
+  const handleDataParsed = (parsedData, filename, metadata = {}) => {
     setError('');
     setColumns(Object.keys(parsedData[0]));
     setData(parsedData);
     setFilename(filename);
+    if (metadata && metadata.s3_key) {
+        setCurrentS3Key(metadata.s3_key);
+    } else {
+        setCurrentS3Key(null);
+    }
     fetchFileList(); // リスト更新
   };
 
@@ -184,7 +191,7 @@ function Dashboard() {
                   <DataTable columns={columns} data={data} />
                 )}
                 {activeTab === 'summary' && (
-                  <DataSummary columns={columns} data={data} />
+                  <DataSummary columns={columns} data={data} s3Key={currentS3Key} />
                 )}
                 {activeTab === 'graph' && (
                   <DataVisualize 
